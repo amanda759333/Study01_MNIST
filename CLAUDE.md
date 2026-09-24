@@ -30,8 +30,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 <!-- 작성일시: 2026-09-24 13:41 (KST) -->
 ```
 
-시각은 짐작하지 말고 만드는 시점의 실제 로컬 시각을 확인해서 적는다
-(`Get-Date -Format 'yyyy-MM-dd HH:mm'`). 이미 있는 파일을 고칠 때는 이 줄을 건드리지 않는다.
+시각은 **항상 대한민국 표준시(KST, UTC+9)**로 적는다. 짐작하지 말고 만드는 시점에 확인한다.
+
+```powershell
+[System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::UtcNow, 'Korea Standard Time').ToString('yyyy-MM-dd HH:mm')
+```
+
+이미 있는 파일을 고칠 때는 이 줄을 건드리지 않는다(최초 작성 시각으로 고정).
 
 ## 명령
 
