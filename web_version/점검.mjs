@@ -13,6 +13,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { 가중치_펼치기, 확률_계산 } from "./모델.js";
+import { 그림_전처리 } from "./전처리.js";
 
 const 기준경로 = dirname(fileURLToPath(import.meta.url));
 
@@ -71,10 +72,51 @@ function 일단계_추론엔진(가중치들, 기준값) {
   return 실패 === 0 && 맞힌개수 === 10;
 }
 
+/** 1비트로 묶인 280x280 입력을 0/255 배열로 되돌린다. */
+function 비트풀기(묶음, 개수) {
+  const 화소 = new Uint8Array(개수);
+  for (let i = 0; i < 개수; i++) {
+    화소[i] = (묶음[i >> 3] >> (i & 7)) & 1 ? 255 : 0;
+  }
+  return 화소;
+}
+
+function 이단계_전처리(기준값) {
+  console.log("\n■ 2단계 전처리 (기준 280x280 -> 28x28)");
+  let 최대차이 = 0;
+  let 실패 = 0;
+  for (const 항목 of 기준값.항목들) {
+    const 화소280 = 비트풀기(base64_풀기(항목.입력_1비트_base64), 280 * 280);
+    const 얻은것 = 그림_전처리(화소280, 280);
+    const 기대 = base64_풀기(항목.기대_28x28_base64);
+    if (얻은것 === null) {
+      console.log(`  숫자 ${항목.숫자} -> 전처리 결과가 비었다 실패`);
+      실패++;
+      continue;
+    }
+    let 차이 = 0;
+    let 다른화소 = 0;
+    for (let i = 0; i < 784; i++) {
+      const d = Math.abs(얻은것[i] - 기대[i]);
+      if (d > 0) 다른화소++;
+      차이 = Math.max(차이, d);
+    }
+    최대차이 = Math.max(최대차이, 차이);
+    const 통과 = 차이 <= 화소_허용오차;
+    if (!통과) 실패++;
+    console.log(
+      `  숫자 ${항목.숫자} -> 최대 화소차 ${차이}, 다른 화소 ${다른화소}/784 ` +
+      `${통과 ? "통과" : "실패"}`
+    );
+  }
+  console.log(`  합계: 최대 화소차 ${최대차이} (허용 ${화소_허용오차})`);
+  return 실패 === 0;
+}
+
 function main() {
   const 기준값 = 기준값_읽기();
   const 가중치들 = 가중치_읽기();
-  const 결과 = [일단계_추론엔진(가중치들, 기준값)];
+  const 결과 = [일단계_추론엔진(가중치들, 기준값), 이단계_전처리(기준값)];
   const 모두통과 = 결과.every(Boolean);
   console.log(모두통과 ? "\n■ 전부 통과" : "\n■ 실패한 단계가 있습니다");
   if (!모두통과) process.exitCode = 1;
