@@ -73,7 +73,10 @@ powershell -ExecutionPolicy Bypass -File 바로가기_만들기.ps1   # 바탕 �
 패키지를 추가할 때는 venv 쪽에 넣을 것. `바로가기_만들기.ps1`은 venv를 먼저 찾고
 없을 때만 PATH의 파이썬으로 넘어가며, 만들기 전에 torch/Pillow/tkinter 존재를 확인한다.
 
-## 생성물 (커밋/공유 대상 아님)
+## 생성물
 
-`mnist_cnn.pt`(4.8MB), `data/`(MNIST 원본), `__pycache__/`, `venv/`,
-`손글씨인식_미리보기.png`는 모두 명령으로 다시 만들 수 있는 산출물이다.
+`data/`(MNIST 원본), `__pycache__/`, `venv/`, `손글씨인식_미리보기.png`는
+명령으로 다시 만들 수 있어 저장소에 넣지 않는다.
+
+`mnist_cnn.pt`(4.8MB)도 `train.py`로 다시 만들 수 있지만, 받은 즉시 앱이 돌아가도록
+예외적으로 커밋한다. 모델 구조를 바꿔 재학습하면 이 파일도 함께 커밋할 것.

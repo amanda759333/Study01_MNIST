@@ -25,6 +25,9 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
 ## 1단계: 학습
 
+학습이 끝난 `mnist_cnn.pt`가 저장소에 포함되어 있으므로, 바로 2단계로 넘어가도 된다.
+직접 학습하려면:
+
 ```
 python train.py
 ```
