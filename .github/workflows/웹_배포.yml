@@ -1,0 +1,66 @@
+# 작성일시: 2026-09-24 15:45 (KST)
+#
+# web_version/ 을 GitHub Pages 에 올린다. 빌드 단계는 없다(빌드할 것이 없다).
+# 올리기 전에 점검.mjs 로 JS 이식이 파이썬과 맞는지 확인한다.
+#
+# 저장소 Settings -> Pages 에서 소스를 "GitHub Actions" 로 바꿔 두어야 한다.
+#
+# 작업(job) id 와 스텝(step) id 는 GitHub Actions 규칙상 영문자/숫자/`-`/`_`만
+# 허용되어 한글을 쓸 수 없다(파싱 자체가 실패한다). 그래서 id 는 영문(verify,
+# deploy, deploy_step)으로 두고, 사람이 읽는 name 과 주석은 전부 한글로 쓴다.
+
+name: 웹 배포
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: 검증
+    runs-on: ubuntu-latest
+    steps:
+      - name: 소스 내려받기
+        uses: actions/checkout@v4
+
+      - name: Node 준비
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: JS 이식 검증
+        working-directory: web_version
+        run: node 점검.mjs
+
+  deploy:
+    name: 배포
+    needs: verify
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy_step.outputs.page_url }}
+    steps:
+      - name: 소스 내려받기
+        uses: actions/checkout@v4
+
+      - name: Pages 설정
+        uses: actions/configure-pages@v5
+
+      - name: web_version 을 아티팩트로 올리기
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web_version
+
+      - name: 배포
+        id: deploy_step
+        uses: actions/deploy-pages@v4
