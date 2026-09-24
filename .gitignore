@@ -16,3 +16,6 @@ data/
 # 윈도우 탐색기가 만드는 파일
 Thumbs.db
 desktop.ini
+
+# SDD 작업 공간 (계획 실행 중 쓰는 스크래치)
+.superpowers/
