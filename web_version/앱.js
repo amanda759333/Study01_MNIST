@@ -26,6 +26,7 @@ const 그림 = new Uint8Array(캔버스크기 * 캔버스크기);  // 인식에 
 let 가중치들 = null;
 let 그리는중 = false;
 let 이전좌표 = null;
+let 그리는붓 = null;   // 현재 획을 그리고 있는 pointerId. 다른 포인터(손바닥 등)는 무시한다.
 
 const 막대들 = [];
 const 값글씨들 = [];
@@ -106,8 +107,12 @@ function 화면_그리기_시작() {
 
 function 붓_누름(사건) {
   if (!가중치들) return;
+  // 이미 다른 손가락(펜)으로 그리는 중이면 새 접촉은 무시한다.
+  // 그러지 않으면 손바닥이 스치는 것만으로 이전좌표가 엉뚱한 점으로 바뀐다.
+  if (그리는중) return;
   그리기판.setPointerCapture(사건.pointerId);
   그리는중 = true;
+  그리는붓 = 사건.pointerId;
   const { x, y } = 좌표_구하기(사건);
   이전좌표 = { x, y };
   붓.beginPath();
@@ -117,7 +122,7 @@ function 붓_누름(사건) {
 }
 
 function 붓_이동(사건) {
-  if (!그리는중) return;
+  if (!그리는중 || 사건.pointerId !== 그리는붓) return;
   const { x, y } = 좌표_구하기(사건);
   붓.beginPath();
   붓.moveTo(이전좌표.x, 이전좌표.y);
@@ -127,10 +132,11 @@ function 붓_이동(사건) {
   이전좌표 = { x, y };
 }
 
-function 붓_뗌() {
-  if (!그리는중) return;
+function 붓_뗌(사건) {
+  if (!그리는중 || 사건.pointerId !== 그리는붓) return;
   그리는중 = false;
   이전좌표 = null;
+  그리는붓 = null;
   인식하기();
 }
 
