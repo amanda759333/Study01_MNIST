@@ -1,91 +1,76 @@
-# 손글씨 숫자 인식기 (PyTorch CNN)
+# 손글씨 숫자 인식기
 
-마우스로 직접 쓴 숫자를 학습된 합성곱 신경망(CNN)이 0~9 중 하나로 알아맞히는 프로그램이다.
-모든 코드와 주석, 화면 문구는 한글로 작성했다.
+마우스나 손가락으로 쓴 숫자를 CNN(합성곱 신경망)이 0~9 중 하나로 알아맞히는 프로그램이다.
+모든 코드와 주석, 화면 문구는 한글로 작성했다. 두 가지 버전이 있다.
 
-## 파일 구성
+**웹 데모: <https://amanda759333.github.io/Study01_MNIST/>** — 설치 없이 브라우저에서 바로 써 볼 수 있다.
 
-| 파일 | 설명 |
-| --- | --- |
-| `model.py` | CNN 구조(`숫자인식CNN`) 정의. 학습과 예측이 같은 구조를 공유한다. |
-| `train.py` | MNIST 데이터로 학습하고 가중치를 `mnist_cnn.pt`로 저장한다. |
-| `app.py` | 마우스로 숫자를 써서 인식하는 GUI 프로그램. |
-| `점검.py` | GUI 없이 저장된 가중치의 성능을 확인하는 검증 스크립트. |
-| `mnist_cnn.pt` | 학습이 끝나면 만들어지는 가중치 파일. |
-| `data/` | MNIST 원본이 내려받아지는 폴더(자동 생성). |
+## 두 버전 비교
 
-## 준비
+| | `desktop_version/` | `web_version/` |
+| --- | --- | --- |
+| 기술 | PyTorch + Tkinter | 순수 자바스크립트 (외부 라이브러리 없음) |
+| 학습 | 할 수 있다 (`train.py`) | 못 한다 — 데스크톱에서 학습한 결과를 가져다 쓴다 |
+| 설치 | 필요 (Python, torch, Pillow) | 필요 없다 — 브라우저만 있으면 된다 |
+| 실행 | `python app.py` | 링크를 열거나 로컬 서버로 `index.html` |
+| 대상 | 윈도우 전용 | 어디서나 (GitHub Pages 로 배포) |
+
+두 버전은 같은 모델(`desktop_version/model.py` 의 `숫자인식CNN`)을 공유한다. 이 계약과
+각 버전의 세부 사항은 [`CLAUDE.md`](CLAUDE.md), [`desktop_version/CLAUDE.md`](desktop_version/CLAUDE.md),
+[`web_version/CLAUDE.md`](web_version/CLAUDE.md) 에 있다.
+
+## 데스크톱 버전 시작하기
 
 ```
+cd desktop_version
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+python train.py     # 선택 — 학습이 끝난 mnist_cnn.pt 가 이미 저장소에 포함되어 있다
+python app.py        # GUI 실행
 ```
 
-설치가 **완전히 끝난 뒤** 실행해야 한다. 설치 중에 실행하면 DLL이 아직 다 쓰이지 않아
-`OSError: [WinError 1114] ... c10.dll` 같은 오류가 날 수 있다.
+- 설치가 **완전히 끝난 뒤** 실행해야 한다. 설치 중에 실행하면 DLL이 아직 다 쓰이지 않아
+  `OSError: [WinError 1114] ... c10.dll` 같은 오류가 날 수 있다.
+- 왼쪽 검은 칸에 마우스로 숫자를 하나 쓰면, 마우스 버튼을 떼는 순간 인식해서 오른쪽에
+  예측 숫자와 0~9 확률 막대를 보여 준다. `지우기`로 판을 비우고, `다시 인식`으로 같은
+  그림을 한 번 더 판정할 수 있다.
+- 성능을 점검하려면 `python 점검.py` — MNIST 평가 정확도와 그린 획 인식 결과를 출력한다.
+- 바탕 화면 바로가기: `powershell -ExecutionPolicy Bypass -File 바로가기_만들기.ps1`
+  (프로젝트 `venv` 의 `pythonw.exe` 로 실행되어 콘솔 창 없이 앱만 뜬다. 작업 표시줄 고정은
+  윈도우 제약으로 바로가기를 오른쪽 클릭해 직접 해야 한다.)
 
-## 1단계: 학습
+윈도우 관련 함정과 구조·불변조건 같은 자세한 내용은 [`desktop_version/CLAUDE.md`](desktop_version/CLAUDE.md) 를 본다.
 
-학습이 끝난 `mnist_cnn.pt`가 저장소에 포함되어 있으므로, 바로 2단계로 넘어가도 된다.
-직접 학습하려면:
+## 웹 버전 시작하기
 
-```
-python train.py
-```
-
-- 기본 3에폭 학습 후 `mnist_cnn.pt`를 저장한다.
-- 에폭 수를 바꾸려면 `python train.py --에폭 5` 처럼 옵션을 준다.
-- 그 밖의 옵션: `--배치크기`, `--평가배치크기`, `--학습률`
-
-## 2단계: 손글씨 인식 실행
+가장 쉬운 방법은 위 데모 링크를 여는 것이다. 로컬에서 띄우려면:
 
 ```
-python app.py
+cd web_version
+python -m http.server 8765
+# 브라우저에서 http://localhost:8765 열기
 ```
 
-- 왼쪽 검은 칸에 마우스로 숫자를 하나 쓴다.
-- 마우스 버튼을 떼는 순간 바로 인식해서, 오른쪽에 예측 숫자와 0~9 확률 막대를 보여 준다.
-- `지우기`로 판을 비우고, `다시 인식`으로 같은 그림을 한 번 더 판정할 수 있다.
+`index.html` 을 `file://` 로 직접 열면 ES 모듈이 CORS 에 막혀 동작하지 않으므로
+반드시 로컬 서버를 거친다. 이식이 파이썬과 맞는지 확인하려면 `node 점검.mjs`.
+자세한 내용은 [`web_version/CLAUDE.md`](web_version/CLAUDE.md) 를 본다.
 
-## 3단계(선택): 성능 점검
+## 폴더 구조
 
-```
-python 점검.py
-```
-
-MNIST 평가 데이터 전체 정확도와, 실제로 그린 것처럼 만든 획 이미지의 인식 결과를 출력한다.
-
-## 바탕 화면 바로가기
-
-```
-powershell -ExecutionPolicy Bypass -File 바로가기_만들기.ps1
-```
-
-- 바탕 화면에 `손글씨 숫자 인식기` 바로가기가 만들어진다.
-- **프로젝트 `venv`의 `pythonw.exe`로 실행**되며, venv가 없으면 PATH의 파이썬으로 대체된다.
-  만들기 전에 그 환경에 torch·Pillow·tkinter가 있는지 확인한다.
-- 더블 클릭하면 **검은 콘솔 창 없이** 앱 창만 뜬다.
-- 아이콘은 `손글씨인식.ico`이며, `python 아이콘_만들기.py`로 다시 만들 수 있다.
-- **작업 표시줄 고정**: 바로가기를 마우스 오른쪽 클릭 →
-  (윈도우 11이면 `추가 옵션 표시` →) `작업 표시줄에 고정`.
-  윈도우는 프로그램이 스스로 고정하는 것을 막아 두었기 때문에 이 한 번은 직접 해야 한다.
-  고정한 아이콘과 실행 중인 창은 같은 앱 ID(`MnistHandwriting.Recognizer`)로 묶여
-  하나의 단추로 표시된다.
-- 프로젝트 폴더를 옮기면 바로가기가 가리키는 경로가 어긋나므로, 옮긴 뒤
-  `바로가기_만들기.ps1`을 다시 실행하면 된다.
-
-## 파일 구성(추가)
-
-| 파일 | 설명 |
+| 경로 | 설명 |
 | --- | --- |
-| `아이콘_만들기.py` | 여러 크기를 담은 `손글씨인식.ico` 생성 |
-| `바로가기_만들기.ps1` | 바탕 화면 바로가기 생성 |
+| `desktop_version/` | PyTorch 학습·GUI 인식 프로그램 (윈도우 전용) |
+| `web_version/` | 브라우저에서 도는 순수 JS 인식기, GitHub Pages 배포 대상 |
+| `venv/` | 두 버전이 함께 쓰는 파이썬 가상환경 (저장소 루트에 위치, 생성물이라 커밋 안 함) |
+| `.github/workflows/웹_배포.yml` | main push 시 `web_version` 을 검증 후 GitHub Pages 에 배포 |
 
-## 동작 방식 요약
+## venv 가 루트에 있는 이유
 
-1. **학습(train.py)**: MNIST 6만 장을 약간 회전·이동시켜(마우스 글씨처럼 삐뚤어진 입력에 강해지도록)
-   CNN을 학습하고, 매 에폭마다 평가 1만 장으로 정확도를 확인한다.
-2. **전처리(app.py의 `그림_전처리`)**: 그린 획만 잘라내 긴 변을 20픽셀로 줄이고,
-   28x28 한가운데에 무게중심을 맞춰 놓는다. MNIST가 만들어진 방식과 같게 맞추는 단계로,
-   이것을 생략하면 인식률이 크게 떨어진다.
-3. **예측(app.py의 `확률_계산`)**: 학습 때와 똑같이 정규화(평균 0.1307, 표준편차 0.3081)한 뒤
-   모델에 넣고, 로그 확률을 실제 확률로 바꿔 화면에 표시한다.
+`venv/pyvenv.cfg` 와 `Scripts/pip.exe`·`activate` 에는 만들어질 때의 절대 경로가 박혀 있어
+폴더를 옮기면 깨진다. 두 버전(`desktop_version/`, `web_version/도구/`)이 같은 환경을
+공유하므로 어느 한쪽 안에 두지 않고 저장소 루트에 둔다.
+
+## 배포 설정
+
+웹 데모 링크가 동작하려면 저장소 **Settings → Pages → Source 를 "GitHub Actions" 로
+설정**해야 한다(코드만으로는 바꿀 수 없다). 설정 후 main 에 push 하면
+`.github/workflows/웹_배포.yml` 이 `web_version` 을 검증하고 자동으로 배포한다.

@@ -1,109 +1,70 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+마우스나 손가락으로 쓴 숫자를 인식하는 CNN 프로그램. 두 버전이 있다.
 
-마우스로 쓴 숫자를 인식하는 PyTorch CNN + Tkinter 프로그램. 윈도우 전용이며 git 저장소가 아니다.
+| 폴더 | 무엇인가 |
+| --- | --- |
+| `desktop_version/` | PyTorch + Tkinter. 학습과 인식을 모두 한다. 윈도우 전용. |
+| `web_version/` | 외부 라이브러리 없는 순수 자바스크립트. 인식만 한다. GitHub Pages 에 올라간다. |
+
+각 폴더의 `CLAUDE.md` 에 그 버전의 명령·구조·함정이 있다. **먼저 그쪽을 읽을 것.**
+이 파일에는 두 버전에 공통으로 걸리는 것만 둔다.
 
 ## 가장 중요한 규칙: 모든 것을 한글로
 
 이 프로젝트는 **변수·함수·클래스 이름까지 한글**로 쓴다. 주석, docstring, GUI 문구,
 콘솔 출력도 전부 한글이다. 예: `숫자인식CNN`, `그림_전처리`, `확률_계산`, `붓_이동`, `기준경로`.
-새 코드를 추가하거나 기존 코드를 고칠 때 이 규칙을 깨지 말 것. 영어 식별자를 섞으면
-주변 코드와 이질적이 된다.
+**자바스크립트도 예외가 아니다.** 파일명도 한글로 쓴다(`index.html` 만 GitHub Pages
+요구로 영문이다). 새 코드를 추가하거나 기존 코드를 고칠 때 이 규칙을 깨지 말 것.
 
 ## 새 파일에는 작성일시 주석
 
 새로 만드는 파일은 맨 위에 작성 날짜와 시각을 주석으로 적는다. 형식은
 `작성일시: YYYY-MM-DD HH:MM (KST)` 이고, 파일 형식에 맞는 주석 문법을 쓴다.
-파이썬은 인코딩 선언 바로 아래, 마크다운은 HTML 주석으로 맨 위에 둔다.
+파이썬은 인코딩 선언 아래, 마크다운은 HTML 주석, JS 는 `//`, CSS 는 `/* */`, YAML 은 `#`.
 
-```python
-# -*- coding: utf-8 -*-
-# 작성일시: 2026-09-24 13:41 (KST)
-```
-
-```powershell
-# 작성일시: 2026-09-24 13:41 (KST)
-```
-
-```markdown
-<!-- 작성일시: 2026-09-24 13:41 (KST) -->
-```
-
-시각은 **항상 대한민국 표준시(KST, UTC+9)**로 적는다. 짐작하지 말고 만드는 시점에 확인한다.
+시각은 **항상 대한민국 표준시(KST)**로 적는다. 짐작하지 말고 만드는 시점에 확인한다.
 
 ```powershell
 [System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::UtcNow, 'Korea Standard Time').ToString('yyyy-MM-dd HH:mm')
 ```
 
+**Git Bash 의 `TZ=Asia/Seoul date` 는 이 환경에서 9시간 어긋난다.** 위 PowerShell 명령만 쓸 것.
+
 이미 있는 파일을 고칠 때는 이 줄을 건드리지 않는다(최초 작성 시각으로 고정).
 
-## 명령
+## 두 버전에 걸친 계약 (깨면 정확도가 조용히 무너진다)
+
+두 버전은 같은 모델을 공유한다. 한쪽만 고치면 다른 쪽이 조용히 어긋난다.
+
+1. **모델 구조를 바꾸면 양쪽을 다 손봐야 한다.**
+   `desktop_version/model.py` 의 `숫자인식CNN` 을 바꾸면
+   ① `train.py` 로 재학습해 `mnist_cnn.pt` 를 다시 만들고
+   ② `web_version/도구/내보내기.py` 로 웹 가중치를 다시 내보내고
+   ③ `web_version/모델.js` 의 순전파도 같이 고쳐야 한다.
+   (`내보내기.py` 는 텐서 이름·순서가 다르면 멈추므로 ②를 잊으면 드러난다)
+
+2. **정규화 상수가 세 곳에 있다.** `평균 = 0.1307`, `표준편차 = 0.3081` 이
+   `desktop_version/train.py`, `desktop_version/app.py`, `web_version/모델.js` 에
+   각각 있다. 셋이 같아야 한다.
+
+3. **전처리가 두 곳에 쌍으로 있다.** `desktop_version/app.py` 의 `그림_전처리` 와
+   `web_version/전처리.js` 의 `그림_전처리` 는 같은 일을 한다.
+   한쪽만 고치면 안 된다. 고친 뒤에는 `web_version` 에서 `node 점검.mjs` 를 돌린다.
+
+## venv 는 저장소 루트에 있다
+
+`venv/pyvenv.cfg` 와 `Scripts/pip.exe`·`activate` 에 절대 경로가 박혀 있어
+**폴더를 옮기면 깨진다.** 그래서 `desktop_version/` 안이 아니라 루트에 둔다.
+파이썬 실행은 `./venv/Scripts/python.exe` 로 한다.
+
+## 검증
+
+각 버전에 검증 스크립트가 하나씩 있다. 테스트 프레임워크는 없다.
 
 ```
-python train.py              # 학습 후 mnist_cnn.pt 저장 (CPU 3에폭 약 3.5분)
-python train.py --에폭 10    # 옵션도 한글. --배치크기, --평가배치크기, --학습률
-python app.py                # GUI 실행 (mnist_cnn.pt 필요)
-python 점검.py               # 검증: MNIST 평가 정확도 + 그린 획 0~9 인식
-python 아이콘_만들기.py      # 손글씨인식.ico 재생성
-powershell -ExecutionPolicy Bypass -File 바로가기_만들기.ps1   # 바탕 화면 바로가기
+cd desktop_version && ../venv/Scripts/python.exe 점검.py   # MNIST 정확도 + 그린 획 10개
+cd web_version && node 점검.mjs                            # JS 이식이 파이썬과 맞는가
 ```
 
-테스트 프레임워크는 없다. `점검.py`가 유일한 검증 경로이며 두 가지를 독립적으로 확인한다.
-하나만 돌리려면 `main()` 대신 `평가_정확도(모델, 장치)` 또는 `그린숫자_인식(모델, 장치)`를
-직접 호출하면 된다. 기준선: MNIST 99.1%, 그린 획 10/10.
-
-## 구조와 핵심 불변조건
-
-`model.py`의 `숫자인식CNN` 하나를 `train.py`·`app.py`·`점검.py`가 공유한다. 저장하는 것은
-`state_dict`뿐이므로 **모델 구조를 바꾸면 기존 `mnist_cnn.pt`는 못 읽는다** — 구조 변경 시
-반드시 재학습해야 한다.
-
-세 파일에 흩어진 두 가지 계약을 깨면 정확도가 조용히 무너진다:
-
-1. **정규화 상수**: `train.py`의 `평균`/`표준편차`(0.1307/0.3081)와 `app.py`의 동명 상수가
-   같아야 한다. `점검.py`는 `app.py` 쪽 값을 가져다 쓴다.
-2. **전처리 형식**: `app.py`의 `그림_전처리`가 캔버스 그림을 MNIST와 같은 형식
-   (획을 잘라내 긴 변 20픽셀로 축소 → 28x28 중앙에 무게중심 정렬)으로 바꾼다.
-   이 단계를 생략하거나 단순 리사이즈로 바꾸면 화면 결과가 크게 나빠진다.
-   `train.py`가 넣은 회전·이동 증강도 마우스 글씨의 삐뚤어짐을 흡수하려는 같은 목적이다.
-
-`app.py`는 GUI이면서 동시에 **import 가능한 모듈**이다. `점검.py`가 `import app` 후
-`그림_전처리`/`확률_계산`/상수들을 빌려 쓰므로, import 시점에 창을 만들거나 가중치를
-읽는 코드를 최상위에 두면 안 된다(모든 부수효과는 `main()` 안에 있어야 한다).
-
-## 윈도우 관련 함정 (이미 겪은 것들)
-
-- **`pip install torch` 가 끝나기 전에 실행하면** `OSError: [WinError 1114] ... c10.dll`이 난다.
-  DLL이 덜 쓰인 상태일 뿐이고 VC++ 런타임 문제가 아니다. 설치 완료를 기다렸다가 실행할 것.
-- **`.ps1` 파일은 UTF-8 BOM으로 저장**해야 한다. Windows PowerShell 5.1은 BOM이 없으면
-  한글을 ANSI로 읽어 파싱 에러가 난다.
-- 파이썬 스크립트 앞부분의 `sys.stdout.reconfigure(encoding="utf-8")`는 콘솔 한글 깨짐 방지용이다.
-- 바로가기는 콘솔 창을 없애기 위해 `python.exe`가 아니라 **`pythonw.exe`**를 대상으로 한다.
-  작업 표시줄 고정은 윈도우가 API를 막아 두어 프로그램이 대신 할 수 없고 사용자가 직접 해야 한다.
-- **venv의 `pythonw.exe`는 껍데기(launcher)** 라서 창을 실제로 띄우는 것은 자식 프로세스인
-  기반 파이썬(`C:\Python313\pythonw.exe`)이다. 그래서 작업 표시줄이 고정된 아이콘과
-  실행 중인 창을 같은 것으로 보게 하려면 **앱 ID(AppUserModelID)를 양쪽에 명시**해야 한다:
-  `app.py`의 `앱ID` 상수와 `바로가기_만들기.ps1`의 `$앱ID`가 같은 값이어야 하며,
-  `app.py`는 창을 만들기 전에 `작업표시줄_이름_등록()`을 부른다.
-- `InitPropVariantFromString`은 헤더의 인라인 함수라 `propsys.dll`에서 못 불러온다.
-  문자열 PROPVARIANT는 `VT_LPWSTR`로 직접 만들어야 한다(`바로가기_만들기.ps1` 참고).
-- 파워셸은 GUI 프로그램인 `pythonw.exe`의 종료를 기다리지 않는다. 종료 코드가 필요한 확인은
-  같은 환경의 콘솔용 `python.exe`로 할 것.
-
-## 실행 환경이 둘이다
-
-- 프로젝트 `venv\` (torch 2.14.0+cpu, system-site-packages 사용 안 함) — **기준 환경**.
-  바탕 화면 바로가기도 이쪽을 가리킨다.
-- 전역 `C:\Python313` (torch 2.14.0+cpu) — venv가 없을 때의 대비책.
-
-패키지를 추가할 때는 venv 쪽에 넣을 것. `바로가기_만들기.ps1`은 venv를 먼저 찾고
-없을 때만 PATH의 파이썬으로 넘어가며, 만들기 전에 torch/Pillow/tkinter 존재를 확인한다.
-
-## 생성물
-
-`data/`(MNIST 원본), `__pycache__/`, `venv/`, `손글씨인식_미리보기.png`는
-명령으로 다시 만들 수 있어 저장소에 넣지 않는다.
-
-`mnist_cnn.pt`(4.8MB)도 `train.py`로 다시 만들 수 있지만, 받은 즉시 앱이 돌아가도록
-예외적으로 커밋한다. 모델 구조를 바꿔 재학습하면 이 파일도 함께 커밋할 것.
+기준선은 각 폴더의 `CLAUDE.md` 에 있다.
