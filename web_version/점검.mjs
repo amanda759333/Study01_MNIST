@@ -1,14 +1,16 @@
 // 작성일시: 2026-09-24 15:18 (KST)
 //
 // 웹 버전이 파이썬과 같은 결과를 내는지 브라우저 없이 확인한다.
+//   0단계 지문 대조: desktop_version/mnist_cnn.pt 가 마지막 내보내기 이후 바뀌지 않았는가
 //   1단계 추론 엔진: 기준 28x28 -> 확률이 파이썬과 같은가
 //   2단계 전처리:    기준 280x280 -> 28x28 이 파이썬과 같은가
-// 두 단계를 따로 돌려 어느 쪽이 깨졌는지 바로 드러나게 한다.
+// 단계를 따로 돌려 어느 쪽이 깨졌는지 바로 드러나게 한다.
 //
 // 실행 방법
 //     node 점검.mjs
 
-import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -18,7 +20,8 @@ import { 그림_전처리 } from "./전처리.js";
 const 기준경로 = dirname(fileURLToPath(import.meta.url));
 
 // 합격선. 1단계는 누적 순서 차이만 남아야 하고, 2단계는 화소가 정확히 같아야 한다.
-const 확률_허용오차 = 1e-4;
+// design.md 의 목표(절대 오차 1e-5 이내)와 맞춘다.
+const 확률_허용오차 = 1e-5;
 const 화소_허용오차 = 0;
 
 function 읽기(이름) {
@@ -42,6 +45,41 @@ function 가중치_읽기() {
     throw new Error(`가중치.bin 크기가 구조와 다릅니다: ${버퍼.byteLength} != ${구조.전체바이트}`);
   }
   return 가중치_펼치기(버퍼, 구조);
+}
+
+/**
+ * mnist_cnn.pt 가 마지막 'node 도구/내보내기.py' 실행 이후 바뀌었는지 확인한다.
+ *
+ * 이름·모양 검사(내보내기.py 안)는 내보내기를 실제로 돌렸을 때만 작동한다.
+ * 흔한 재학습(같은 구조, 에폭만 늘림)은 이름·모양이 그대로라 그 검사에 안 걸리고,
+ * 재내보내기를 잊으면 기준값.json 과 가중치.bin 은 예전 그대로 서로 맞아
+ * 점검.mjs 가 영원히 통과해 버린다. 그래서 원본 파일의 SHA-256 을 따로 대조한다.
+ */
+function 영단계_지문대조() {
+  console.log("■ 0단계 지문 대조 (mnist_cnn.pt 가 마지막 내보내기 이후 바뀌었는가)");
+  const 구조 = JSON.parse(읽기("가중치_구조.json").toString("utf-8"));
+  const 원본경로 = join(기준경로, "..", "desktop_version", "mnist_cnn.pt");
+
+  if (!existsSync(원본경로)) {
+    console.log("  desktop_version/mnist_cnn.pt 가 없어 건너뜀 (이 검사는 아무것도 확인하지 못했다)");
+    return true;
+  }
+  if (!구조.원본_sha256) {
+    console.log("  가중치_구조.json 에 원본_sha256 이 없다 — 이 검사가 생기기 전에 만든 결과물이다.");
+    console.log("  ../venv/Scripts/python.exe 도구/내보내기.py 로 다시 내보내야 한다.");
+    return false;
+  }
+
+  const 실제지문 = createHash("sha256").update(readFileSync(원본경로)).digest("hex");
+  const 통과 = 실제지문 === 구조.원본_sha256;
+  if (통과) {
+    console.log(`  지문 일치 (${실제지문.slice(0, 12)}...) 통과`);
+  } else {
+    console.log(`  지문 불일치: 가중치_구조.json ${구조.원본_sha256.slice(0, 12)}... / 실제 파일 ${실제지문.slice(0, 12)}... 실패`);
+    console.log("  mnist_cnn.pt 가 마지막 내보내기 이후 바뀌었다(재학습 후 재내보내기를 잊은 것으로 보인다).");
+    console.log("  ../venv/Scripts/python.exe 도구/내보내기.py 를 다시 실행해 웹 가중치를 갱신할 것.");
+  }
+  return 통과;
 }
 
 function 일단계_추론엔진(가중치들, 기준값) {
@@ -114,9 +152,11 @@ function 이단계_전처리(기준값) {
 }
 
 function main() {
+  const 지문통과 = 영단계_지문대조();
+  console.log();
   const 기준값 = 기준값_읽기();
   const 가중치들 = 가중치_읽기();
-  const 결과 = [일단계_추론엔진(가중치들, 기준값), 이단계_전처리(기준값)];
+  const 결과 = [지문통과, 일단계_추론엔진(가중치들, 기준값), 이단계_전처리(기준값)];
   const 모두통과 = 결과.every(Boolean);
   console.log(모두통과 ? "\n■ 전부 통과" : "\n■ 실패한 단계가 있습니다");
   if (!모두통과) process.exitCode = 1;

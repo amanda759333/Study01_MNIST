@@ -11,6 +11,7 @@ torch 가 필요하므로 데스크톱 환경에서 실행한다.
 """
 
 import base64
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -92,7 +93,17 @@ def 양자화_모델(사전, 장치):
     return 모델
 
 
-def 가중치_내보내기(사전):
+def 원본_지문(가중치파일):
+    """mnist_cnn.pt 원본 바이트의 SHA-256.
+
+    재학습만 하고 내보내기를 다시 안 돌리는 실수를 잡기 위한 지문이다.
+    텐서 이름·모양이 같아도(흔한 재학습 케이스) 내용이 바뀌면 지문이 달라지므로,
+    web_version/점검.mjs 가 이 값과 데스크톱 쪽 mnist_cnn.pt 를 비교해 어긋남을 잡는다.
+    """
+    return hashlib.sha256(가중치파일.read_bytes()).hexdigest()
+
+
+def 가중치_내보내기(사전, 원본sha256):
     """가중치.bin 과 가중치_구조.json 을 만든다."""
     조각들 = []
     층목록 = []
@@ -115,6 +126,8 @@ def 가중치_내보내기(사전):
         "자료형": "float16",
         "바이트순서": "little",
         "전체바이트": 오프셋,
+        # mnist_cnn.pt 원본 바이트의 SHA-256. 점검.mjs 가 재내보내기를 잊은 경우를 잡는 데 쓴다.
+        "원본_sha256": 원본sha256,
         "층목록": 층목록,
     }
     (웹폴더 / "가중치_구조.json").write_text(
@@ -188,7 +201,10 @@ def main():
     사전 = 사전_불러오기()
     print(f"■ 가중치 불러오기 완료: {가중치파일}")
 
-    전체바이트 = 가중치_내보내기(사전)
+    원본sha256 = 원본_지문(가중치파일)
+    print(f"■ 원본 SHA-256: {원본sha256}")
+
+    전체바이트 = 가중치_내보내기(사전, 원본sha256)
 
     # 되읽어서 원본과 맞는지 확인한다. 오차는 float16 반올림에서만 나와야 한다.
     원본 = torch.cat([사전[이름].flatten() for 이름 in 층이름들]).numpy()

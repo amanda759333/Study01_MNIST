@@ -23,7 +23,10 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  # false: 배포가 이미 진행 중이면 새 실행은 대기한다. GitHub 공식 Pages 워크플로도
+  # false 를 쓴다 - true 로 두면 배포 작업이 Pages Deployments API 를 호출하는 도중에
+  # 취소될 수 있어 배포가 어중간하게 끊길 수 있다.
+  cancel-in-progress: false
 
 jobs:
   verify:
