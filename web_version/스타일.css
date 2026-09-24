@@ -1,0 +1,114 @@
+/* 작성일시: 2026-09-24 15:34 (KST) */
+/* 색은 데스크톱 버전(app.py)과 맞췄다. */
+
+:root {
+  --바탕색: #f4f4f4;
+  --강조색: #1a5fb4;
+  --연한강조: #9ec3ec;
+  --막대바탕: #dddddd;
+  --흐린글씨: #555555;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 24px 16px 48px;
+  background: var(--바탕색);
+  color: #202020;
+  font-family: "맑은 고딕", "Malgun Gothic", system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+h1 { margin: 0 0 4px; font-size: 24px; text-align: center; }
+
+.설명 {
+  margin: 0 auto 24px;
+  max-width: 34rem;
+  text-align: center;
+  color: var(--흐린글씨);
+  font-size: 14px;
+}
+
+.판 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+#그리기판 {
+  display: block;
+  width: 280px;
+  height: 280px;
+  background: #000000;
+  border: 2px solid #888888;
+  border-radius: 4px;
+  cursor: crosshair;
+  touch-action: none;   /* 그리는 동안 화면이 스크롤되지 않게 한다 */
+}
+
+.단추칸 { display: flex; gap: 10px; margin-top: 12px; }
+
+.단추칸 button {
+  flex: 1;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 14px;
+  background: #ffffff;
+  border: 1px solid #b0b0b0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.단추칸 button:hover { background: #eaeaea; }
+.단추칸 button:disabled { opacity: 0.5; cursor: default; }
+
+.오른쪽 { min-width: 220px; text-align: center; }
+
+.이름표 { margin: 0; font-size: 14px; }
+
+.결과숫자 {
+  margin: 0;
+  font-size: 72px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--강조색);
+}
+
+.신뢰도 { margin: 0 0 12px; font-size: 13px; color: var(--흐린글씨); }
+
+.확률표 { margin: 0; padding: 0; list-style: none; }
+
+.확률표 li {
+  display: grid;
+  grid-template-columns: 1.4rem 120px 3.4rem;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 3px;
+}
+
+.확률표 .숫자 { font-weight: 700; font-size: 13px; }
+
+.확률표 .막대바탕 {
+  height: 14px;
+  background: var(--막대바탕);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.확률표 .막대 {
+  height: 100%;
+  width: 0;
+  background: var(--연한강조);
+  transition: width 0.12s ease-out;
+}
+
+.확률표 li.으뜸 .막대 { background: var(--강조색); }
+
+.확률표 .값 { font-size: 11px; color: var(--흐린글씨); text-align: left; }
+
+@media (max-width: 620px) {
+  .판 { gap: 20px; }
+}

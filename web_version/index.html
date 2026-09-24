@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<!-- 작성일시: 2026-09-24 15:34 (KST) -->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>손글씨 숫자 인식기 (웹)</title>
+<link rel="stylesheet" href="스타일.css">
+</head>
+<body>
+<h1>손글씨 숫자 인식기</h1>
+<p class="설명">
+  검은 칸에 숫자를 하나 쓰세요. 손을 떼면 바로 알아맞힙니다.
+  학습된 CNN 을 외부 라이브러리 없이 자바스크립트로 돌립니다.
+</p>
+
+<div class="판">
+  <div class="왼쪽">
+    <canvas id="그리기판" width="280" height="280"></canvas>
+    <div class="단추칸">
+      <button id="지우기단추" type="button">지우기</button>
+      <button id="다시인식단추" type="button">다시 인식</button>
+    </div>
+  </div>
+
+  <div class="오른쪽">
+    <p class="이름표">인식 결과</p>
+    <p id="결과숫자" class="결과숫자">?</p>
+    <p id="신뢰도" class="신뢰도">모델을 불러오는 중…</p>
+    <ul id="확률표" class="확률표"></ul>
+  </div>
+</div>
+
+<script type="module" src="앱.js"></script>
+</body>
+</html>
