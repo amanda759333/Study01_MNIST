@@ -16,10 +16,16 @@ $앱파일 = Join-Path $프로젝트폴더 'app.py'
 $아이콘파일 = Join-Path $프로젝트폴더 '손글씨인식.ico'
 
 # 1) 콘솔 없이 실행해 주는 pythonw.exe 를 찾는다.
-#    프로젝트 안의 venv 를 먼저 쓰고, venv 가 없을 때만 PATH 의 파이썬으로 넘어간다.
+#    venv 를 먼저 쓰고, 없을 때만 PATH 의 파이썬으로 넘어간다.
 #    (패키지를 venv 에 설치하므로 venv 쪽을 기준으로 삼아야 바로가기가 그 패키지를 본다)
-$파이썬w = Join-Path $프로젝트폴더 'venv\Scripts\pythonw.exe'
-if (Test-Path $파이썬w) {
+#    venv 는 저장소 루트에 있다. pyvenv.cfg 와 pip.exe 에 절대 경로가 박혀 있어
+#    desktop_version 안으로 옮기면 깨지기 때문이다. 그래서 위쪽도 찾아본다.
+$후보들 = @(
+    (Join-Path $프로젝트폴더 'venv\Scripts\pythonw.exe'),
+    (Join-Path (Split-Path -Parent $프로젝트폴더) 'venv\Scripts\pythonw.exe')
+)
+$파이썬w = $후보들 | Where-Object { Test-Path $_ } | Select-Object -First 1
+if ($파이썬w) {
     $환경설명 = '프로젝트 venv'
 } else {
     Write-Output '※ venv 를 찾지 못해 PATH 의 파이썬을 사용합니다.'
