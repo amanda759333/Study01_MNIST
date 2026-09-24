@@ -10,6 +10,7 @@ torch 가 필요하므로 데스크톱 환경에서 실행한다.
     ..\\..\\venv\\Scripts\\python.exe 내보내기.py
 """
 
+import base64
 import json
 import sys
 from pathlib import Path
@@ -124,6 +125,64 @@ def 가중치_내보내기(사전):
     return 오프셋
 
 
+def 비트묶기(그림):
+    """0 또는 255 만 있는 그림을 1비트씩 묶어 base64 로 만든다.
+
+    점검.py 의 획은 fill=255 로만 그려져 중간 밝기가 없다.
+    그래서 1비트 묶기가 무손실이고, 280x280 한 장이 9,800바이트로 줄어든다.
+    """
+    화소 = 그림.tobytes()
+    이상한값 = {값 for 값 in 화소} - {0, 255}
+    if 이상한값:
+        raise SystemExit(f"그림에 0/255 가 아닌 값이 있습니다: {sorted(이상한값)[:5]}")
+    묶음 = bytearray((len(화소) + 7) // 8)
+    for 번호, 값 in enumerate(화소):
+        if 값:
+            묶음[번호 >> 3] |= 1 << (번호 & 7)
+    return base64.b64encode(bytes(묶음)).decode("ascii")
+
+
+def 기준값_내보내기(사전, 장치):
+    """0~9 를 그려서 입력·전처리 결과·확률을 기준값.json 으로 남긴다."""
+    import app
+    import 점검
+
+    모델 = 양자화_모델(사전, 장치)
+    항목들 = []
+    for 숫자 in range(10):
+        그림 = 점검.손글씨_그리기(숫자)
+        if 그림.size != (app.캔버스크기, app.캔버스크기):
+            raise SystemExit(f"그림 크기가 예상과 다릅니다: {그림.size}")
+        그림28 = app.그림_전처리(그림)
+        if 그림28 is None:
+            raise SystemExit(f"숫자 {숫자} 의 전처리 결과가 비어 있습니다.")
+        확률 = app.확률_계산(모델, 장치, 그림28)
+        예측 = max(range(10), key=lambda i: 확률[i])
+        if 예측 != 숫자:
+            raise SystemExit(
+                f"양자화 모델이 그린 숫자 {숫자} 를 {예측} 로 틀렸습니다. "
+                "기준값으로 쓸 수 없습니다."
+            )
+        항목들.append({
+            "숫자": 숫자,
+            "입력_1비트_base64": 비트묶기(그림),
+            "기대_28x28_base64": base64.b64encode(그림28.tobytes()).decode("ascii"),
+            "기대_확률": 확률,
+        })
+
+    기준값 = {
+        "설명": "JS 이식 검증용 골든 벡터. 도구/내보내기.py 가 만든다. 직접 고치지 말 것.",
+        "확률_기준": "float16 으로 양자화한 모델의 출력. 웹이 쓰는 가중치와 같다.",
+        "입력형식": "280x280, 행 우선, i번째 화소는 바이트 i>>3 의 비트 i&7. 1이면 255.",
+        "항목들": 항목들,
+    }
+    (웹폴더 / "기준값.json").write_text(
+        json.dumps(기준값, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
+    크기 = (웹폴더 / "기준값.json").stat().st_size
+    print(f"■ 기준값.json 저장: 항목 {len(항목들)}개, {크기 / 1024:.0f}KB")
+
+
 def main():
     장치 = torch.device("cpu")
     사전 = 사전_불러오기()
@@ -153,6 +212,7 @@ def main():
     print("□ float16 양자화 (웹이 쓰는 것)")
     양자정확도 = 점검.평가_정확도(양자화_모델(사전, 장치), 장치)
     print(f"■ 양자화로 인한 정확도 변화: {양자정확도 - 원본정확도:+.3f}%p")
+    기준값_내보내기(사전, 장치)
 
 
 if __name__ == "__main__":
