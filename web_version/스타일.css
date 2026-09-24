@@ -20,6 +20,16 @@ body {
   line-height: 1.6;
 }
 
+/* 화면 맨 위에 두는 작성자 표시. 제목보다 먼저 나오되 제목을 누르지 않게 작게 쓴다. */
+.작성자 {
+  margin: 0 0 8px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--강조색);
+  letter-spacing: 0.02em;
+}
+
 h1 { margin: 0 0 4px; font-size: 24px; text-align: center; }
 
 .설명 {
